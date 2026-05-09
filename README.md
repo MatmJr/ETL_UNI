@@ -1,55 +1,47 @@
-# Pipeline ETL: Universidades e Meios de Pagamento
+# Projeto de ETL - Meios de Pagamento (API Banco Central)
 
-Este projeto é um pipeline **ETL (Extract, Transform, Load)** desenvolvido em Python. O objetivo principal é consumir dados de diferentes APIs públicas e carregá-los em diferentes tecnologias de banco de dados (SQLite e MongoDB).
+Este projeto realiza a extração de dados da API do Banco Central sobre Meios de Pagamento, aplica transformações e ajustes de escala (milhões/milhares) utilizando **PySpark** (ou **Pandas**), e salva os dados processados em um banco de dados **SQLite** local.
 
-## 🎯 Funcionalidades
+Toda a infraestrutura necessária (Python, Java/PySpark, dependências) foi conteinerizada utilizando **Docker**, garantindo que o projeto rode em qualquer ambiente isoladamente e sem necessidade de instalações complexas na máquina do desenvolvedor.
 
-- **Extração (Extract):**
-  - Dados de universidades ao redor do mundo a partir do país (utilizando a API pública do [HipoLabs](http://universities.hipolabs.com/)).
-  - Dados sobre os meios de pagamento trimestrais no Brasil (utilizando a API de Dados Abertos do **Banco Central do Brasil**).
-- **Carregamento (Load):**
-  - Carga de dados tabulares em banco de dados relacional local usando **SQLite**.
-  - Carga de dados (JSON/documentos) em banco de dados NoSQL na nuvem utilizando **MongoDB Atlas**.
+## Pré-requisitos
+- [Docker](https://www.docker.com/products/docker-desktop/) instalado e rodando.
 
-## 📂 Estrutura do Projeto
+---
 
-```
-etl-uni/
-│
-├── main.py               # Script principal que orquestra o fluxo ETL
-├── teste.py              # Script local para testes de requisição da API
-├── .env                  # Variáveis de ambiente com credenciais (não versionado)
-│
-└── src/
-    ├── extract.py        # Módulo contendo as funções de extração (requests)
-    └── load.py           # Módulo contendo as funções de carga de banco de dados
-```
+## 1. Construir a Imagem Docker
+Abra o terminal na raiz do projeto (onde está o arquivo `Dockerfile`) e execute o comando abaixo. Isso irá baixar o Python, instalar o Java (necessário para o motor do PySpark) e instalar todas as bibliotecas definidas.
 
-## 🚀 Como Executar
-
-### 1. Pré-requisitos
-- Python 3.10 ou superior
-- O gerenciador de pacotes `pip`
-- Uma conta no MongoDB Atlas com um cluster (ex: `Cluster0`) e permissões configuradas.
-
-### 2. Instalação e Configuração
-
-Crie um ambiente virtual (recomendado) e instale as dependências:
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # ou .venv\Scripts\activate no Windows
-pip install -r requirements.txt
+docker build -t etl-pyspark .
 ```
 
-Crie um arquivo `.env` na raiz do seu projeto e adicione as suas credenciais do MongoDB:
-```env
-DB_USER=seu_usuario_do_mongo
-DB_PASSWORD=sua_senha_do_mongo
+## 2. Executar o Processamento com PySpark
+Para rodar o script principal (`spark_processing.py`), mapeamos a porta `4040` (para visualizar o painel do Spark) e utilizamos um **Volume** para garantir que o banco de dados `meios_pagamento.db` gerado não seja perdido ao final do processo.
+
+Se estiver usando **PowerShell** (padrão no VS Code / Windows moderno):
+```powershell
+docker run --rm -it -p 4040:4040 -v "${PWD}:/app" etl-pyspark
 ```
 
-### 3. Rodando o Pipeline
+Se estiver usando o **CMD** (Prompt de Comando antigo):
+```cmd
+docker run --rm -it -p 4040:4040 -v "%cd%:/app" etl-pyspark
+```
 
-Basta executar o arquivo principal:
+*Dica: Após a execução, o script ficará pausado. Você poderá acessar `http://localhost:4040` no seu navegador para explorar o Spark UI. Pressione `ENTER` no terminal quando quiser encerrar o contêiner.*
+
+## 3. Executar o Processamento com Pandas (Alternativo)
+Caso queira testar a versão do script feita utilizando a engine do Pandas (`pandas_processing.py`):
+
+```powershell
+# PowerShell
+docker run --rm -it -v "${PWD}:/app" etl-pyspark python pandas_processing.py
+```
+
+## 4. Acessar o Console Interativo do PySpark (Opcional)
+Se você quiser abrir o terminal (Shell) interativo do PySpark para fazer análises manuais diretamente com o motor do Spark:
+
 ```bash
-python main.py
+docker run --rm -it etl-pyspark pyspark
 ```

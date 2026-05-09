@@ -83,3 +83,21 @@ class Load:
             collection.insert_many(uni_dict)
 
         print(f"Dados inseridos com sucesso na coleção '{collection_name}'!")
+
+    def save_spark_to_sqlite_local(self, df, db_name, table_name, mode="append"):
+        """
+        Salva um DataFrame do PySpark em um banco SQLite local convertendo para Pandas,
+        evitando a necessidade de drivers JDBC e problemas de tipos de dados nativos.
+
+        Args:
+            df (DataFrame): O DataFrame do PySpark a ser salvo.
+            db_name (str): Nome do arquivo de banco de dados (sem o .db).
+            table_name (str): Nome da tabela.
+            mode (str): Comportamento de escrita ('append' ou 'replace').
+        """
+        pandas_mode = "replace" if mode == "overwrite" else mode
+        pdf = df.toPandas()
+        con = sqlite3.connect(f"{db_name}.db")
+        pdf.to_sql(table_name, con, if_exists=pandas_mode, index=False)
+        con.close()
+        print(f"Dados processados pelo Spark salvos com sucesso na tabela '{table_name}' do SQLite local usando Pandas!")
