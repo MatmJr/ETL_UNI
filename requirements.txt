@@ -2,3 +2,6 @@ requests
 python-dotenv
 pymongo
 pyspark
+streamlit
+openai
+fastmcp
