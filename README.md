@@ -6,22 +6,36 @@ Projeto educacional que extrai dados de Meios de Pagamento da API do Banco Centr
 
 ## Arquitetura
 
+O projeto tem dois fluxos independentes:
+
 ```
-API Banco Central (OLINDA)
-        │
-   ┌────┴────────────────────┐
-   │                         │
-   ▼                         ▼
-src/extract.py          src/extract.py
-   │                         │
-   ▼                         ▼
-spark_processing.py     mcp_server.py
-   │                    (FastMCP server)
-   ▼                         │
-src/load.py                  ▼
-   │                       app.py
-   ▼                  (Streamlit + OpenAI)
-meios_pagamento.db
+┌─────────────────────────────────────────────────────┐
+│                  FLUXO ETL (PySpark)                │
+│                                                     │
+│  API Banco Central  →  src/extract.py               │
+│                              │                      │
+│                     spark_processing.py             │
+│                              │                      │
+│                         src/load.py                 │
+│                         /         \                 │
+│               SQLite (.db)      MongoDB Atlas       │
+└─────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│               FLUXO CHAT COM IA                     │
+│                                                     │
+│  API Banco Central  →  src/extract.py               │
+│                              │                      │
+│                        mcp_server.py                │
+│                    (FastMCP — converte unidades)    │
+│                              │                      │
+│                           app.py                    │
+│               (Streamlit + OpenAI gpt-4o-mini)      │
+│                                                     │
+│   usuário → pergunta → OpenAI decide chamar tool    │
+│          → mcp_server executa → retorna valores     │
+│          → OpenAI formula resposta → Streamlit      │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---

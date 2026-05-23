@@ -6,6 +6,24 @@ mcp = FastMCP("meios-pagamento")
 extract = Extract()
 
 
+def _converter_unidades(registro: dict) -> dict:
+    """Converte as grandezas da API para valores absolutos.
+
+    A API retorna:
+      - campos 'valor*'     em R$ milhões  → multiplica por 1_000_000
+      - campos 'quantidade*' em milhares   → multiplica por 1_000
+    """
+    convertido = {}
+    for campo, valor in registro.items():
+        if campo.startswith("valor") and isinstance(valor, (int, float)):
+            convertido[campo] = round(valor * 1_000_000, 2)
+        elif campo.startswith("quantidade") and isinstance(valor, (int, float)):
+            convertido[campo] = round(valor * 1_000)
+        else:
+            convertido[campo] = valor
+    return convertido
+
+
 def _trimestre_para_data(trimestre: str) -> str:
     ano = int(trimestre[:4])
     q = int(trimestre[4])
@@ -45,7 +63,8 @@ def buscar_meios_pagamento(trimestre: str) -> list:
     data_alvo = _trimestre_para_data(trimestre)
     filtrados = [r for r in todos if r.get("datatrimestre", "").startswith(data_alvo[:7])]
 
-    return filtrados if filtrados else todos
+    registros = filtrados if filtrados else todos
+    return [_converter_unidades(r) for r in registros]
 
 
 if __name__ == "__main__":
